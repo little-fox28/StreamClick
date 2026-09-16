@@ -10,7 +10,7 @@ services:
     command:
       - redpanda start
       - --smp 1
-      - --memory 512M
+      - --memory 384M
       - --reserve-memory 0M
       - --overprovisioned
       - --node-id 0
@@ -22,6 +22,14 @@ services:
       - "9644:9644" # Admin API
     networks:
       - streamclick-net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.2'
+          memory: 256M
 
   redpanda-console:
     image: docker.redpanda.com/redpandadata/console:v2.5.2
@@ -34,6 +42,11 @@ services:
       - redpanda
     networks:
       - streamclick-net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
 
   # ============================================================================
   # DATA LAKE: MinIO (S3-compatible Object Storage)
@@ -52,6 +65,14 @@ services:
       - minio_data:/data
     networks:
       - streamclick-net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
 
   # ============================================================================
   # SERVING DATABASE: PostgreSQL (Speed Layer / Serving Layer)
@@ -70,6 +91,14 @@ services:
       - ./infrastructure/docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - streamclick-net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
 
   # ============================================================================
   # INGESTION API: FastAPI
@@ -87,6 +116,14 @@ services:
       - redpanda
     networks:
       - streamclick-net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
 
   # ============================================================================
   # STREAM PROCESSING: Quix Streams (Speed Layer)
@@ -103,6 +140,14 @@ services:
       - postgres
     networks:
       - streamclick-net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
 
 volumes:
   minio_data:

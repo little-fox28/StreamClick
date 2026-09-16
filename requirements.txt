@@ -1,0 +1,30 @@
+# StreamClick Core Dependencies
+pydantic>=2.7.0
+pydantic-settings>=2.2.0
+python-dotenv>=1.0.1
+
+# Ingestion API (FastAPI)
+fastapi>=0.111.0
+uvicorn[standard]>=0.30.0
+
+# Message Broker (Kafka / Redpanda)
+confluent-kafka>=2.4.0
+quixstreams>=2.4.0
+
+# Storage & Data Lake (S3 / MinIO / Parquet)
+boto3>=1.34.0
+pyarrow>=16.1.0
+fastparquet>=2024.5.0
+s3fs>=2024.5.0
+
+# Serving Database (PostgreSQL)
+psycopg2-binary>=2.9.9
+SQLAlchemy>=2.0.30
+
+# Analytical OLAP (DuckDB)
+duckdb>=1.0.0
+
+# Developer & Testing Tooling
+pytest>=8.2.0
+requests>=2.32.0
+faker>=25.8.0

@@ -1,0 +1,113 @@
+version: '3.8'
+
+services:
+  # ============================================================================
+  # MESSAGE BROKER: Redpanda (Kafka-compatible) & Console UI
+  # ============================================================================
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v23.3.14
+    container_name: streamclick-redpanda
+    command:
+      - redpanda start
+      - --smp 1
+      - --memory 512M
+      - --reserve-memory 0M
+      - --overprovisioned
+      - --node-id 0
+      - --check=false
+      - --kafka-addr PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
+    ports:
+      - "9092:9092"
+      - "9644:9644" # Admin API
+    networks:
+      - streamclick-net
+
+  redpanda-console:
+    image: docker.redpanda.com/redpandadata/console:v2.5.2
+    container_name: streamclick-redpanda-console
+    environment:
+      KAFKA_BROKERS: redpanda:29092
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redpanda
+    networks:
+      - streamclick-net
+
+  # ============================================================================
+  # DATA LAKE: MinIO (S3-compatible Object Storage)
+  # ============================================================================
+  minio:
+    image: minio/minio:RELEASE.2024-05-28T07-15-41Z
+    container_name: streamclick-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000" # S3 API
+      - "9001:9001" # Web UI Console
+    volumes:
+      - minio_data:/data
+    networks:
+      - streamclick-net
+
+  # ============================================================================
+  # SERVING DATABASE: PostgreSQL (Speed Layer / Serving Layer)
+  # ============================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: streamclick-postgres
+    environment:
+      POSTGRES_DB: streamclick
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_secret_pw
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - streamclick-net
+
+  # ============================================================================
+  # INGESTION API: FastAPI
+  # ============================================================================
+  ingestion-api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    container_name: streamclick-ingestion-api
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redpanda
+    networks:
+      - streamclick-net
+
+  # ============================================================================
+  # STREAM PROCESSING: Quix Streams (Speed Layer)
+  # ============================================================================
+  stream-processor:
+    build:
+      context: .
+      dockerfile: streaming/Dockerfile
+    container_name: streamclick-stream-processor
+    env_file:
+      - .env
+    depends_on:
+      - redpanda
+      - postgres
+    networks:
+      - streamclick-net
+
+volumes:
+  minio_data:
+  postgres_data:
+
+networks:
+  streamclick-net:
+    driver: bridge

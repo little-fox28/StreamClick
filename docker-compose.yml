@@ -52,7 +52,7 @@ services:
   # DATA LAKE: MinIO (S3-compatible Object Storage)
   # ============================================================================
   minio:
-    image: minio/minio:RELEASE.2024-05-28T07-15-41Z
+    image: quay.io/minio/minio:latest
     container_name: streamclick-minio
     command: server /data --console-address ":9001"
     environment:

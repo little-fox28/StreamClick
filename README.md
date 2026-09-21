@@ -131,7 +131,8 @@ StreamClick/
 
 ### Yêu cầu hệ thống:
 - **Docker** và **Docker Compose** (v2.0+)
-- **Python** 3.11+ (cho development và chạy ad-hoc analytics script)
+- **Python** 3.10+ (cho development và chạy ad-hoc analytics script)
+- **uv** (Khuyên dùng - Package manager siêu tốc) hoặc `pip`
 
 ### Hướng dẫn từng bước:
 
@@ -158,23 +159,57 @@ docker compose ps
 - **MinIO Console UI:** `http://localhost:9001` (User: `minioadmin` / Pass: `minioadmin`)
 - **PostgreSQL Port:** `localhost:5432` (DB: `streamclick`, User: `postgres`, Pass: `postgres_secret_pw`)
 
-#### Bước 4: Kiểm thử End-to-End Pipeline
-1. Cài đặt Python dependencies cho môi trường local:
-   ```bash
-   pip install -r requirements.txt
-   ```
+#### Bước 4: Khởi tạo Virtual Environment & Cài đặt Dependencies bằng `uv`
+Để chạy các script kiểm thử và phân tích batch ở môi trường local, bạn nên khởi tạo virtual environment và sử dụng **`uv`** (trình quản lý gói siêu tốc) để cài đặt dependencies chỉ trong vài giây:
 
-2. Bắn dữ liệu mẫu (mock events) vào Ingestion API:
+##### Cách 1: Sử dụng `uv` trực tiếp (Khuyên dùng)
+```bash
+# 1. Cài đặt uv (nếu chưa có trên máy)
+pip install uv
+
+# 2. Khởi tạo virtual environment
+uv venv
+
+# 3. Kích hoạt môi trường ảo:
+# Trên Windows (PowerShell):
+.venv\Scripts\Activate.ps1
+# Trên Windows (CMD):
+.venv\Scripts\activate.bat
+# Trên Linux/macOS:
+source .venv/bin/activate
+
+# 4. Cài đặt toàn bộ dependencies siêu tốc:
+uv pip install -r requirements.txt
+```
+
+##### Cách 2: Sử dụng venv truyền thống tích hợp `uv`
+```bash
+# 1. Khởi tạo môi trường ảo với python tiêu chuẩn
+python -m venv venv
+
+# 2. Kích hoạt môi trường ảo:
+# Trên Windows (PowerShell):
+.\venv\Scripts\Activate.ps1
+# Trên Linux/macOS:
+source venv/bin/activate
+
+# 3. Cài đặt uv vào venv và tải dependencies:
+python -m pip install uv
+.\venv\Scripts\uv.exe pip install -r requirements.txt
+```
+
+#### Bước 5: Kiểm thử End-to-End Pipeline
+1. **Bắn dữ liệu mẫu (mock events) vào Ingestion API:**
    ```bash
    python infrastructure/scripts/produce_mock_events.py
    ```
 
-3. Chạy consumer lưu trữ Parquet vào MinIO Data Lake:
+2. **Chạy consumer lưu trữ Parquet vào MinIO Data Lake:**
    ```bash
    python batch/consumer_to_parquet.py
    ```
 
-4. Chạy truy vấn phân tích OLAP với DuckDB trực tiếp trên MinIO:
+3. **Chạy truy vấn phân tích OLAP với DuckDB trực tiếp trên MinIO:**
    ```bash
    python batch/analytics_duckdb.py
    ```

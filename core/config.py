@@ -1,3 +1,4 @@
+from functools import lru_cache
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 
@@ -48,6 +49,15 @@ class Settings(BaseSettings):
     GCP_PROJECT_ID: Optional[str] = None
     GCP_PUBSUB_TOPIC: Optional[str] = None
     GCP_GCS_BUCKET: Optional[str] = None
+
+
+@lru_cache
+def get_settings() -> Settings:
+    """
+    Singleton Pattern thông qua @lru_cache.
+    Đảm bảo việc đọc ổ đĩa và prase cấu hình chỉ diễn ra 1 lần duy nhất.
+    """
+    return Settings()
 
 
 settings = Settings()

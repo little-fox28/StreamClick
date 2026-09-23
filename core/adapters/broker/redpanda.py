@@ -4,7 +4,7 @@ import time
 import logging
 import threading
 from typing import Optional
-from confluent_kafka import Producer
+from confluent_kafka import Producer, KafkaException
 
 from core.adapters.broker.base import AbstractMessagePublisher
 
@@ -25,9 +25,8 @@ class RedpandaPublisher(AbstractMessagePublisher):
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
-                    cls._instance = super(RedpandaPublisher, cls).__new__(cls)
-                    cls._instance._initialized = False
-                             
+                    cls._instance = super(RedpandaPublisher, cls).__new__(cls)  
+                    cls._instance._initialized = False         
         return cls._instance
 
     def __init__(self, bootstrap_servers: str, max_retries: int = 5, retry_interval: float = 2.0):
@@ -116,7 +115,7 @@ class RedpandaPublisher(AbstractMessagePublisher):
                         topic=topic,
                         value=payload,
                         key=partition_key,
-                        on_delivery=self._delivery_callback()
+                        on_delivery=self._delivery_callback
                     )
                 return True
             except Exception as e:
@@ -128,7 +127,14 @@ class RedpandaPublisher(AbstractMessagePublisher):
 
     def flush(self, timeout: float = 5.0) -> None:
         """
-        Giải phóng toàn bộ gói tin còn tồn đọng trong Buffer xuống mạng
+        Xả toàn bộ tin còn tồn trong buffer xuống mạng.
+        """
+        if self._producer:
+            self._producer.flush(timeout=timeout)
+
+    def close(self) -> None:
+        """
+        Xả toàn bộ buffer và đóng kết nối an toàn.
         """
         if self._producer:
             logger.info("Flushing buffer and closing Redpanda connection...")
@@ -136,5 +142,6 @@ class RedpandaPublisher(AbstractMessagePublisher):
             self._producer = None
             self._initialized = False
 
-# Tương thích ngược với Kafa
+
+# Alias tương thích ngược với Kafa
 KafkaMessagePublisher = RedpandaPublisher

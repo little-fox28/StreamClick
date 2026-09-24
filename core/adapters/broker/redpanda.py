@@ -100,7 +100,7 @@ class RedpandaPublisher(AbstractMessagePublisher):
                     topic=topic,
                     value=payload,
                     key=partition_key,
-                    on_delivery=self._delivery_callback()
+                    on_delivery=self._delivery_callback
                 )
                 # Kích hoạt phục vụ hàng đợi callback mà không block thread
                 self._producer.poll(0)

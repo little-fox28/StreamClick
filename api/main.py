@@ -1,76 +1,72 @@
+from fastapi import status
+from fastapi import responses
+from core.adapters.broker.base import AbstractMessagePublisher
+from fastapi import Request
+from fastapi import FastAPI
 from contextlib import asynccontextmanager
 import logging
-from fastapi import FastAPI, HTTPException, status
-from fastapi.responses import JSONResponse
+
 
 from core.config import settings
-from core.schemas.clickstream import ClickstreamEvent
-from core.adapters.broker.base import MessagePublisher
-from core.adapters.broker.kafka_broker import KafkaMessagePublisher
+from core.adapters.broker.redpanda import RedpandaPublisher
 
-logging.basicConfig(level=settings.LOG_LEVEL)
+
 logger = logging.getLogger("streamclick.api")
-
-# Publisher instance
-publisher: MessagePublisher = None
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global publisher
-    logger.info("Initializing Message Publisher...")
-    if settings.BROKER_TYPE == "kafka":
-        publisher = KafkaMessagePublisher(bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS)
-        publisher.connect()
-    else:
-        raise ValueError(f"Unsupported BROKER_TYPE: {settings.BROKER_TYPE}")
+    """Quản lý vòng đời (Lifespan) của ứng dụng FastAPI.
+    Hàm này kiểm soát toàn bộ chu kỳ khởi động (Startup) và tắt máy an toàn (Shutdown)
+    của hệ thống Ingestion, giúp quản lý tài nguyên mạng và bộ đệm một cách tập trung.
+    
+    Args:
+        app (FastAPI): Instance của ứng dụng FastAPI.
+    """
+    logger.info("Application startup: Initializing services and resources...")
+    publisher = RedpandaPublisher(bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS)
+    publisher.connect()
+
+    # Gắn publisher vào state của app để sử dụng tài nguyên độc lập và tái sử dụng thông qua DI
+    app.state.publisher = publisher
     yield
-    logger.info("Shutting down Message Publisher...")
-    if publisher:
-        publisher.close()
 
+    logger.info("Application shutdown: Cleaning up resources and flushing buffers...")
+    if hasattr(app.state, "publisher") and app.state.publisher:
+        app.state.publisher.close()
+        logger.info("Redpanda Publisher connection closed successfully.")
 
+def get_message_publisher(request: Request) -> AbstractMessagePublisher:
+    """
+    Dependence trích xuất Message Publisher từ Application State,
+
+    Args:
+        request (Request): Đối tượng HTTP Request từ client.
+    Returns:
+        AbstractMessagePublisher: Publisher instance đang hoạt động
+    """
+    return request.app.state.publisher
+
+# FastAPI Initialization
 app = FastAPI(
     title="StreamClick Ingestion API",
+    description="High-throughput real-time Clickstream Ingestion Service for E-commerce tracking",
     version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
     lifespan=lifespan
 )
 
-
-@app.get("/health", tags=["Monitoring"])
+# Health check endpoint
+@app.get(
+    "/health",
+    tags=["Monitoring"],
+    status_code=status.HTTP_200_OK,
+    summary="Health check probe"
+)
 async def health_check():
-    return {"status": "healthy", "service": "streamclick-ingestion-api"}
-
-
-@app.post("/v1/events", status_code=status.HTTP_202_ACCEPTED, tags=["Clickstream"])
-async def track_event(event: ClickstreamEvent):
-    """
-    Stateless Ingestion Endpoint for real-time Clickstream events.
-    Pushes valid events into Redpanda / Kafka topic.
-    """
-    if not publisher:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Message Broker not connected"
-        )
-
-    # Use anonymous_id or user_id as partition key to maintain user ordering
-    partition_key = event.user_id or event.anonymous_id
-    payload = event.to_message_dict()
-
-    success = publisher.publish(
-        topic=settings.KAFKA_TOPIC_CLICKSTREAM,
-        message=payload,
-        key=partition_key
-    )
-
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to publish event to Message Broker"
-        )
-
-    return JSONResponse(
-        status_code=status.HTTP_202_ACCEPTED,
-        content={"status": "accepted", "event_id": event.event_id}
-    )
+    """Endpoint kiểm tra sức khỏe của dịch vụ Ingestion API."""
+    return {
+        "status": "healthy",
+        "service": "streamclick-ingestion-api",
+        "broker": settings.BROKER_TYPE
+    }

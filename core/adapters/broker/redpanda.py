@@ -79,9 +79,9 @@ class RedpandaPublisher(AbstractMessagePublisher):
         Hàm callback chạy ngầm nhận phản hồi từ broker.
         """
         if err is not None:
-            logger.error(f"Gửi message thất bại: {err}")
+            logger.error(f"Failed to deliver message: {err}")
         else:
-            logger.debug(f"Đã gửi tới topic {msg.topic()} [Partition: {msg.partition()}] tại offset {msg.offset()}")
+            logger.debug(f"Message delivered to topic {msg.topic()} [Partition: {msg.partition()}] at offset {msg.offset()}")
 
     def publish(self, topic: str, message: Dict[str, Any], key: Optional[str] = None) -> bool:
         """

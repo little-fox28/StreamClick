@@ -1,3 +1,6 @@
+# Kaggle
+kagglehub
+
 # StreamClick Core Dependencies
 pydantic>=2.7.0,<2.13.0
 pydantic-settings>=2.3.0,<2.12.0

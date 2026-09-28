@@ -1,15 +1,14 @@
-from fastapi import status
-from fastapi import responses
-from core.adapters.broker.base import AbstractMessagePublisher
-from fastapi import Request
-from fastapi import FastAPI
+from turtledemo.sorting_animate import partition
+
+from fastapi import Depends, FastAPI, HTTPException, Request, status
 from contextlib import asynccontextmanager
 import logging
 
 
 from core.config import settings
 from core.adapters.broker.redpanda import RedpandaPublisher
-
+from core.schemas.clickstream import ClickstreamEvent
+from core.adapters.broker.base import AbstractMessagePublisher
 
 logger = logging.getLogger("streamclick.api")
 
@@ -55,6 +54,37 @@ app = FastAPI(
     redoc_url="/redoc",
     lifespan=lifespan
 )
+
+@app.post("/track",
+          tags=["Ingestion"],
+          status_code=status.HTTP_202_ACCEPTED,
+          summary="Ingest Clickstream Event"
+)
+async def track_event(
+        event: ClickstreamEvent,
+        publisher: AbstractMessagePublisher = Depends(get_message_publisher)
+):
+    # Tiếp nhận event, xác thực data Contract và đẩy bất đồng bộ vào Message Broker.
+    partition_key = event.user_id or event.anonymous_id
+    payload = event.to_message_dict()
+
+    success = publisher.publish(
+        topic=settings.KAFKA_TOPIC_CLICKSTREAM,
+        message=payload,
+        key=partition_key
+    )
+
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Broker ingestion queue is unavailable."
+        )
+
+    return {
+        "status": "success",
+        "envent_id": event.event_id,
+        "timestamp": payload["timestamp"]
+    }
 
 # Health check endpoint
 @app.get(

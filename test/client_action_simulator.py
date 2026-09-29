@@ -115,6 +115,42 @@ def download_dataset(
     logger.info("Dataset staging completed successfully (Size: %.2f MB).", dest_csv.stat().st_size / (1024 * 1024))
     return dest_csv
 
+def create_http_session(
+    pool_connections: int = 20,
+    pool_maxsize: int = 50,
+    max_retries: int = 3,
+    backoff_factor: float = 0.3,
+) -> requests.Session:
+    """Khởi tạo HTTP Client Session với Connection Pooling và Retry tự động.
+
+    Tái sử dụng TCP connection thông qua HTTP Keep-Alive, giúp giảm thiểu độ trễ
+    và tối ưu thông lượng khi gửi hàng nghìn requests liên tục tới Ingestion API.
+
+    Args:
+        pool_connections: Số lượng connection pools được lưu trữ trong cache.
+        pool_maxsize: Số lượng kết nối tối đa được duy trì trong pool.
+        max_retries: Số lần tự động thử lại khi gặp sự cố mạng tầng transport.
+        backoff_factor: Hệ số tính thời gian chờ giữa các lần retry.
+
+    Returns:
+        requests.Session: Đối tượng Session đã được cấu hình adapter tối ưu.
+    """
+    session = requests.Session()
+    retry_strategy = Retry(
+        total=max_retries,
+        backoff_factor=backoff_factor,
+        status_forcelist=[502, 503, 504],
+        allowed_methods=["POST"],
+    )
+    adapter = HTTPAdapter(
+        pool_connections=pool_connections,
+        pool_maxsize=pool_maxsize,
+        max_retries=retry_strategy,
+    )
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return session
+
 
 
 

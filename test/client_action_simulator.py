@@ -151,6 +151,25 @@ def create_http_session(
     session.mount("https://", adapter)
     return session
 
-
-
-
+def chunk_process(
+    file_path: Path,
+    chunk_size: int = 1000,
+) -> Generator[List[Dict[str, str]], None, None]:
+    """Đọc tệp CSV dung lượng lớn theo từng lô nhỏ (chunks) dưới dạng Generator.
+        Hàm này đảm bảo tính hiệu quả bộ nhớ (Memory Efficiency - O(1) RAM Footprint),
+        chỉ nạp một lượng cố định các dòng vào bộ nhớ trong mỗi chu kỳ,
+        giúp xử lý an toàn các tệp dataset lớn mà không gây lỗi Out-Of-Memory (OOM).
+        Args:
+            file_path: Đường dẫn tệp CSV nguồn.
+            chunk_size: Số lượng dòng dữ liệu tối đa trong mỗi chunk.
+        Yields:
+            List[Dict[str, str]]: Danh sách các bản ghi thô dưới dạng dictionary.
+        """
+    logger.info("Opening dataset file '%s' with chunk size %d...", file_path, chunk_size)
+    with open(file_path, mode="r", encoding="utf-8") as csv_file:
+        reader = csv.DictReader(csv_file)
+        while True:
+            chunk = list(itertools.islice(reader, chunk_size))
+            if not chunk:
+                break
+            yield chunk

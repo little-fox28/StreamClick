@@ -1,6 +1,6 @@
 # StreamClick: E-commerce Clickstream Tracking System
 
-Hệ thống thu thập và xử lý dữ liệu Clickstream thương mại điện tử theo kiến trúc **Lambda Architecture**. Dự án được thiết kế theo chuẩn **12-Factor App** & **Cloud-Native**, hoạt động độc lập trên môi trường Self-hosted qua **Docker Compose** và sẵn sàng migrate 1-to-1 lên **Google Cloud Platform (GCP)**.
+Hệ thống thu thập hành vi người dùng và xử lý dữ liệu Clickstream thương mại điện tử theo kiến trúc **Lambda Architecture**. Dự án được thiết kế theo chuẩn **12-Factor App** & **Cloud-Native**, hoạt động độc lập trên môi trường Self-hosted qua **Docker Compose** và sẵn sàng migrate 1-to-1 lên **Google Cloud Platform (GCP)**.
 
 ---
 

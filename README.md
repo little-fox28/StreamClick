@@ -137,12 +137,21 @@ StreamClick/
 ### Hướng dẫn từng bước:
 
 #### Bước 1: Khởi tạo biến môi trường
-Sao chép file `.env.example` thành `.env`:
+Sao chép file cấu hình mẫu `.env.example` thành `.env` để thiết lập các thông số chạy cục bộ:
+
+**Trên macOS/Linux hoặc Windows PowerShell:**
 ```bash
 cp .env.example .env
 ```
 
+**Trên Windows Command Prompt (CMD):**
+```cmd
+copy .env.example .env
+```
+*(Mở file `.env` và tùy chỉnh thông số nếu cần thiết)*
+
 #### Bước 2: Khởi chạy toàn bộ hệ thống bằng Docker Compose
+Lệnh này chạy chung trên tất cả các HĐH (Yêu cầu Docker Desktop/Engine đang bật):
 Chạy lệnh sau để build và khởi động toàn bộ các service (Redpanda, MinIO, PostgreSQL, FastAPI, Quix Streams):
 ```bash
 docker compose up -d --build
@@ -159,43 +168,27 @@ docker compose ps
 - **MinIO Console UI:** `http://localhost:9001` (User: `minioadmin` / Pass: `minioadmin`)
 - **PostgreSQL Port:** `localhost:5432` (DB: `streamclick`, User: `postgres`, Pass: `postgres_secret_pw`)
 
-#### Bước 4: Khởi tạo Virtual Environment & Cài đặt Dependencies bằng `uv`
-Để chạy các script kiểm thử và phân tích batch ở môi trường local, bạn nên khởi tạo virtual environment và sử dụng **`uv`** (trình quản lý gói siêu tốc) để cài đặt dependencies chỉ trong vài giây:
+#### Bước 4: Khởi tạo Virtual Environment & Cài đặt Dependencies
+Dự án sử dụng công cụ quản lý package hiện đại `uv` (thông qua `pyproject.toml`). Bạn không cần tạo venv thủ công nữa.
 
-##### Cách 1: Sử dụng `uv` trực tiếp (Khuyên dùng)
+**1. Cài đặt `uv` (Nếu chưa có):**
+- *macOS/Linux:* `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- *Windows (PowerShell):* `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`
+
+**2. Đồng bộ Dependencies (Chạy chung mọi HĐH):**
+Lệnh sau sẽ tự động tạo thư mục `.venv` và tải các packages siêu tốc:
 ```bash
-# 1. Cài đặt uv (nếu chưa có trên máy)
-pip install uv
-
-# 2. Khởi tạo virtual environment
-uv venv
-
-# 3. Kích hoạt môi trường ảo:
-# Trên Windows (PowerShell):
-.venv\Scripts\Activate.ps1
-# Trên Windows (CMD):
-.venv\Scripts\activate.bat
-# Trên Linux/macOS:
-source .venv/bin/activate
-
-# 4. Cài đặt toàn bộ dependencies siêu tốc:
-uv pip install -r requirements.txt
+uv sync
 ```
 
-##### Cách 2: Sử dụng venv truyền thống tích hợp `uv`
+**3. Khởi chạy và Test (Chạy chung mọi HĐH):**
+Với `uv run`, bạn không cần phải activate venv thủ công, `uv` sẽ tự động xử lý mượt mà trên Windows, macOS và Linux:
 ```bash
-# 1. Khởi tạo môi trường ảo với python tiêu chuẩn
-python -m venv venv
+# Chạy API Server (local)
+uv run uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
 
-# 2. Kích hoạt môi trường ảo:
-# Trên Windows (PowerShell):
-.\venv\Scripts\Activate.ps1
-# Trên Linux/macOS:
-source venv/bin/activate
-
-# 3. Cài đặt uv vào venv và tải dependencies:
-python -m pip install uv
-.\venv\Scripts\uv.exe pip install -r requirements.txt
+# Chạy Test Suite (Unit & Integration)
+uv run pytest -v
 ```
 
 #### Bước 5: Kiểm thử End-to-End Pipeline

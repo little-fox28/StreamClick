@@ -1,4 +1,3 @@
-from turtledemo.sorting_animate import partition
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from contextlib import asynccontextmanager

@@ -14,6 +14,7 @@ uvicorn[standard]>=0.30.0
 confluent-kafka>=2.8.2,<2.12.0
 quixstreams>=3.0.0
 kafka-python>=3.0.11
+pandas
 
 # --- Storage & Data Lake (S3 / MinIO / Parquet) ---
 boto3>=1.34.0

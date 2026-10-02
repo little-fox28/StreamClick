@@ -1,0 +1,10 @@
+# --- Kaggle & Simulator Data Ingestion ---
+kagglehub>=1.0.2
+
+# --- Network & Utilities ---
+requests>=2.34.2
+urllib3>=2.8.0
+python-dotenv>=1.0.1
+
+# --- Core Schemas ---
+pydantic>=2.7.0,<2.11.0

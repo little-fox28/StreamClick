@@ -1,6 +1,8 @@
 from functools import lru_cache
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
+from typing_extensions import Self
 
 
 class Settings(BaseSettings):
@@ -25,25 +27,54 @@ class Settings(BaseSettings):
 
     # Message Broker
     BROKER_TYPE: str = "kafka"  # Options: kafka, pubsub
-    KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
-    KAFKA_TOPIC_CLICKSTREAM: str = "events.clickstream.raw"
-    KAFKA_CONSUMER_GROUP: str = "streamclick-consumer-group"
+    KAFKA_BOOTSTRAP_SERVERS: str
+    KAFKA_TOPIC_CLICKSTREAM: str
+    KAFKA_CONSUMER_GROUP: str
 
     # Object Storage / Data Lake
     STORAGE_TYPE: str = "s3"  # Options: s3, gcs
-    S3_ENDPOINT_URL: Optional[str] = "http://localhost:9000"
-    S3_ACCESS_KEY: Optional[str] = "minioadmin"
-    S3_SECRET_KEY: Optional[str] = "minioadmin"
-    S3_BUCKET_NAME: str = "clickstream-lake"
+    S3_ENDPOINT_URL: Optional[str] = None       
+    S3_ACCESS_KEY: Optional[str] = None         
+    S3_SECRET_KEY: Optional[str] = None         
+    S3_BUCKET_NAME: str
     S3_REGION_NAME: str = "us-east-1"
     S3_SECURE: bool = False
 
+    @model_validator(mode="after")
+    def validate_s3_credentials(self) -> Self:
+        """Kiểm tra bắt buộc (Fail-Fast) tính hợp lệ của S3 credentials.
+
+        Khi `STORAGE_TYPE=s3` và `S3_ENDPOINT_URL` được cung cấp (MinIO mode),
+        `S3_ACCESS_KEY` và `S3_SECRET_KEY` là bắt buộc. Nếu thiếu, ứng dụng
+        phải từ chối khởi động ngay lập tức thay vì âm thầm dùng giá trị mặc định.
+
+        Raises:
+            ValueError: Nếu thiếu credentials khi cần thiết.
+
+        Returns:
+            Self: Instance Settings đã được xác thực.
+        """
+        if self.STORAGE_TYPE == "s3" and self.S3_ENDPOINT_URL is not None:
+            # MinIO mode: explicit endpoint nghĩa là KHÔNG dùng IAM Role -> phải có key
+            missing = []
+            if not self.S3_ACCESS_KEY:
+                missing.append("S3_ACCESS_KEY")
+            if not self.S3_SECRET_KEY:
+                missing.append("S3_SECRET_KEY")
+            if missing:
+                raise ValueError(
+                    f"Missing required S3 credentials for MinIO mode: {', '.join(missing)}. "
+                    f"Set them via .env file or environment variables. "
+                    f"Never hardcode credentials in source code."
+                )
+        return self
+
     # Serving Database (PostgreSQL)
-    POSTGRES_HOST: str = "localhost"
-    POSTGRES_PORT: int = 5432
-    POSTGRES_DB: str = "streamclick"
-    POSTGRES_USER: str = "postgres"
-    POSTGRES_PASSWORD: str = "postgres_secret_pw"
+    POSTGRES_HOST: str
+    POSTGRES_PORT: int
+    POSTGRES_DB: str
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
 
     # GCP Cloud Migration Stubs
     GCP_PROJECT_ID: Optional[str] = None

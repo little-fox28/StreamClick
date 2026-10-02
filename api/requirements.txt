@@ -1,0 +1,11 @@
+# --- Ingestion API (FastAPI) Dependencies ---
+fastapi>=0.111.0
+uvicorn[standard]>=0.30.0
+
+# --- Core Schemas & Settings ---
+pydantic>=2.7.0,<2.11.0
+pydantic-settings>=2.3.0,<2.12.0
+python-dotenv>=1.0.1
+
+# --- Message Broker ---
+confluent-kafka>=2.8.2,<2.12.0

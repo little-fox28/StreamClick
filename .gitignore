@@ -45,6 +45,9 @@ venv.bak/
 *.swp
 *.swo
 
+# agent
+.agents/
+
 # Testing & Coverage
 .pytest_cache/
 .coverage

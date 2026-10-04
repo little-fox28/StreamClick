@@ -7,7 +7,6 @@ lưu trữ phân vùng vào MinIO Data Lake.
 
 import sys
 from pathlib import Path
-from signal import raise_signal
 import logging
 import time
 from typing import Any, Dict, List, Optional

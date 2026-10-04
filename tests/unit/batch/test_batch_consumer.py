@@ -1,4 +1,4 @@
-from batch import DataLakeConsumer
+from batch.datalake_consumer import DataLakeConsumer
 import io
 import json
 from datetime import datetime

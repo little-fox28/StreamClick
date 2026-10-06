@@ -93,14 +93,15 @@ StreamClick/
 │   │   └── clickstream.py           # Pydantic Schema cho Clickstream Event
 │   └── adapters/                    # Adapter Pattern implementations
 │       ├── __init__.py
-│       ├── broker/
-│       │   ├── __init__.py
-│       │   ├── base.py              # MessagePublisher (Abstract Base Class)
-│       │   └── kafka_broker.py      # Redpanda / Kafka Adapter
-│       └── storage/
-│           ├── __init__.py
-│           ├── base.py              # StorageClient (Abstract Base Class)
-│           └── s3_storage.py        # MinIO / S3 Adapter
+│       ├── broker/                  # Redpanda / Kafka Adapter
+│       └── storage/                 # MinIO / S3 Adapter
+│
+├── simulator/                       # Data Generator & Simulator
+│   ├── __init__.py
+│   ├── dataset.py                   # Tải Kaggle Dataset tự động
+│   ├── transformer.py               # Biến đổi dữ liệu sang schema chuẩn
+│   ├── runner.py                    # Worker bắn sự kiện có pacing/delay
+│   └── main.py                      # CLI Simulator Entrypoint
 │
 ├── api/                             # Ingestion Layer
 │   ├── __init__.py
@@ -112,10 +113,13 @@ StreamClick/
 │   ├── Dockerfile
 │   └── pipeline.py                  # Quix Streams real-time pipeline
 │
-├── batch/                           # Batch & OLAP Layer
+├── batch/                           # Batch Layer (Storage / Data Lake)
 │   ├── __init__.py
-│   ├── consumer_to_parquet.py       # Batch archiver ghi Parquet lên MinIO
-│   └── analytics_duckdb.py          # OLAP Engine truy vấn MinIO qua DuckDB
+│   ├── consumer.py                  # Consumer module alias
+│   └── datalake_consumer.py         # Micro-batching & Parquet Archiver lên MinIO
+│
+├── analytics/                       # OLAP & Serving Layer
+│   └── duckdb.py                    # OLAP Engine truy vấn MinIO qua DuckDB
 │
 └── infrastructure/                  # Cấu hình hạ tầng & Script tiện ích
     ├── docker/
@@ -131,8 +135,8 @@ StreamClick/
 
 ### Yêu cầu hệ thống:
 - **Docker** và **Docker Compose** (v2.0+)
-- **Python** 3.10+ (cho development và chạy ad-hoc analytics script)
-- **uv** (Khuyên dùng - Package manager siêu tốc) hoặc `pip`
+- **Python** 3.10+
+- **uv** (Package manager hiện đại cho Python)
 
 ### Hướng dẫn từng bước:
 
@@ -148,13 +152,13 @@ cp .env.example .env
 ```cmd
 copy .env.example .env
 ```
+
 *(Mở file `.env` và tùy chỉnh thông số nếu cần thiết)*
 
-#### Bước 2: Khởi chạy toàn bộ hệ thống bằng Docker Compose
-Lệnh này chạy chung trên tất cả các HĐH (Yêu cầu Docker Desktop/Engine đang bật):
-Chạy lệnh sau để build và khởi động toàn bộ các service (Redpanda, MinIO, PostgreSQL, FastAPI, Quix Streams):
+#### Bước 2: Khởi chạy hạ tầng bằng Docker Compose
+Khởi động toàn bộ các service hạ tầng (Redpanda, MinIO, PostgreSQL, Redpanda Console):
 ```bash
-docker compose up -d --build
+docker compose up -d
 ```
 
 Kiểm tra trạng thái các container:
@@ -168,48 +172,84 @@ docker compose ps
 - **MinIO Console UI:** `http://localhost:9001` (User: `minioadmin` / Pass: `minioadmin`)
 - **PostgreSQL Port:** `localhost:5432` (DB: `streamclick`, User: `postgres`, Pass: `postgres_secret_pw`)
 
-#### Bước 4: Khởi tạo Virtual Environment & Cài đặt Dependencies
-Dự án sử dụng công cụ quản lý package hiện đại `uv` (thông qua `pyproject.toml`). Bạn không cần tạo venv thủ công nữa.
+#### Bước 4: Khởi tạo môi trường & Cài đặt Dependencies
+Dự án sử dụng `uv` để quản lý dependencies và môi trường ảo độc lập:
 
-**1. Cài đặt `uv` (Nếu chưa có):**
-- *macOS/Linux:* `curl -LsSf https://astral.sh/uv/install.sh | sh`
-- *Windows (PowerShell):* `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`
-
-**2. Đồng bộ Dependencies (Chạy chung mọi HĐH):**
-Lệnh sau sẽ tự động tạo thư mục `.venv` và tải các packages siêu tốc:
 ```bash
+# 1. Cài đặt dependencies vào .venv
 uv sync
-```
 
-**3. Khởi chạy và Test (Chạy chung mọi HĐH):**
-Với `uv run`, bạn không cần phải activate venv thủ công, `uv` sẽ tự động xử lý mượt mà trên Windows, macOS và Linux:
-```bash
-# Chạy API Server (local)
-uv run uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
-
-# Chạy Test Suite (Unit & Integration)
+# 2. Chạy Test Suite (Unit Tests)
 uv run pytest -v
 ```
 
-#### Bước 5: Kiểm thử End-to-End Pipeline
-1. **Bắn dữ liệu mẫu (mock events) vào Ingestion API:**
+---
+
+## 5. Hướng dẫn khởi chạy Pipelines
+
+### 🌊 A. Luồng Batch Processing (Redpanda -> MinIO Data Lake -> DuckDB)
+
+Batch Layer chịu trách nhiệm gom các sự kiện Clickstream theo micro-batch từ Redpanda, nén thành định dạng cột **Apache Parquet** và lưu trữ phân vùng (Hive Partitioning) trên **MinIO Object Storage**, sau đó phục vụ truy vấn phân tích tức thời qua **DuckDB**.
+
+```
+[Simulator] ──POST /track──> [FastAPI :8000] ──Produce──> [Redpanda :9092]
+                                                                │
+                                   ┌────────────────────────────┘ (topic: events.clickstream.raw)
+                                   ▼
+                      [ DataLake Consumer ] (batch/datalake_consumer.py)
+                         ├── 1. Buffer sự kiện vào RAM
+                         ├── 2. Micro-batching (batch_size hoặc flush_interval)
+                         └── 3. Nén Apache Parquet
+                                   │
+                                   ▼ (Upload S3 API)
+                      [ MinIO Data Lake :9000 ]
+                         └── raw/clickstream/year=YYYY/month=MM/day=DD/hour=HH/*.parquet
+                                   │
+                                   ▼ (OLAP Partition Pruning)
+                              [ DuckDB ] (analytics/duckdb.py)
+```
+
+#### Các bước chạy Batch Pipeline (Mở từng tab Terminal):
+
+1. **Terminal 1 - Khởi chạy Ingestion API:**
    ```bash
-   python infrastructure/scripts/produce_mock_events.py
+   uv run uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
    ```
 
-2. **Chạy consumer lưu trữ Parquet vào MinIO Data Lake:**
+2. **Terminal 2 - Khởi chạy Batch DataLake Consumer:**
    ```bash
-   python batch/consumer_to_parquet.py
+   uv run python batch/datalake_consumer.py
+   ```
+   > Consumer sẽ lắng nghe topic `events.clickstream.raw`, gom micro-batch và định kỳ đẩy Parquet lên MinIO `streamclick-datalake`.
+
+3. **Terminal 3 - Bắn sự kiện mô phỏng từ Simulator:**
+   ```bash
+   # Tải Kaggle Dataset và bắn 100 sự kiện mẫu với delay 0.05s
+   uv run python -m simulator.main -l 100 -d 0.05
+   
+   # Hoặc chỉ định file CSV cụ thể
+   uv run python -m simulator.main -f "data/clickstream.csv" -l 500 -d 0.01
    ```
 
-3. **Chạy truy vấn phân tích OLAP với DuckDB trực tiếp trên MinIO:**
+4. **Terminal 4 - Chạy truy vấn phân tích OLAP với DuckDB:**
+   Sau khi dữ liệu đã được Consumer đẩy lên MinIO, thực hiện phân tích SQL trực tiếp trên các file Parquet:
    ```bash
-   python batch/analytics_duckdb.py
+   uv run python analytics/duckdb.py
    ```
 
 ---
 
-## 5. Migration Path (Lộ trình chuyển đổi lên Google Cloud Platform)
+### B. Luồng Real-time Speed Processing (Redpanda -> PostgreSQL)
+
+1. **Khởi chạy Quix Streams Speed Processor:**
+   ```bash
+   uv run python streaming/pipeline.py
+   ```
+2. Processor sẽ tiêu thụ realtime các sự kiện xem sản phẩm (`product_view`) và tính toán bộ đếm cập nhật tức thì vào bảng `realtime_product_views` trong **PostgreSQL**.
+
+---
+
+## 6. Migration Path (Lộ trình chuyển đổi lên Google Cloud Platform)
 
 Nhờ áp dụng **Adapter Pattern** và thiết kế **Cloud-Native**, việc chuyển dịch từ hạ tầng On-demand sang Google Cloud Platform hoàn toàn là **1-to-1 mapping** mà không phải tái cấu trúc Core Logic:
 
@@ -222,3 +262,4 @@ Nhờ áp dụng **Adapter Pattern** và thiết kế **Cloud-Native**, việc c
 | **Serving Database** | PostgreSQL (Docker) | **Cloud SQL for PostgreSQL** | Thay đổi connection string `POSTGRES_HOST` trỏ đến Cloud SQL Instance IP / Private Service Connect. |
 | **OLAP / Analytics Engine**| DuckDB (Querying MinIO) | **Google BigQuery** (hoặc BigQuery Omni / External Tables) | Tự động mount GCS Bucket vào BigQuery External Tables hoặc nạp Parquet vào BigQuery Native Storage. |
 | **Infrastructure Management**| Docker Compose | **Terraform (IaC) + Artifact Registry** | Khai báo hạ tầng GCP bằng Terraform modules, build & push image lên Artifact Registry. |
+

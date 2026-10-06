@@ -44,3 +44,6 @@ dev = [
 [tool.pyright]
 extraPaths = ["."]
 
+[tool.uv]
+package = false
+

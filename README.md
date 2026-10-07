@@ -206,7 +206,7 @@ Batch Layer chịu trách nhiệm gom các sự kiện Clickstream theo micro-ba
                          └── raw/clickstream/year=YYYY/month=MM/day=DD/hour=HH/*.parquet
                                    │
                                    ▼ (OLAP Partition Pruning)
-                              [ DuckDB ] (analytics/duckdb.py)
+                              [ DuckDB ] (analytics/duckdb_olap.py)
 ```
 
 #### Các bước chạy Batch Pipeline (Mở từng tab Terminal):
@@ -234,7 +234,7 @@ Batch Layer chịu trách nhiệm gom các sự kiện Clickstream theo micro-ba
 4. **Terminal 4 - Chạy truy vấn phân tích OLAP với DuckDB:**
    Sau khi dữ liệu đã được Consumer đẩy lên MinIO, thực hiện phân tích SQL trực tiếp trên các file Parquet:
    ```bash
-   uv run python analytics/duckdb.py
+   uv run python -m analytics.duckdb_olap
    ```
 
 ---
@@ -243,9 +243,9 @@ Batch Layer chịu trách nhiệm gom các sự kiện Clickstream theo micro-ba
 
 1. **Khởi chạy Quix Streams Speed Processor:**
    ```bash
-   uv run python streaming/pipeline.py
+   uv run python -m streaming.processor
    ```
-2. Processor sẽ tiêu thụ realtime các sự kiện xem sản phẩm (`product_view`) và tính toán bộ đếm cập nhật tức thì vào bảng `realtime_product_views` trong **PostgreSQL**.
+2. Processor sẽ tiêu thụ realtime các sự kiện và đếm số lượng thông qua Tumbling Window (60 giây), sau đó UPSERT kết quả tức thì vào bảng `realtime_metrics` trong **PostgreSQL** để chống trùng lặp dữ liệu (Idempotency).
 
 ---
 

@@ -168,6 +168,46 @@ services:
           cpus: '0.1'
           memory: 96M
 
+
+  # ============================================================================
+  # GRAFANA: Visualize (OLAP Layer)
+  # ============================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: streamclick-grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - streamclick-net
+    depends_on:
+      - postgres
+
+  # ============================================================================
+  # BATCH LAYER: DataLake Consumer
+  # ============================================================================
+  batch-consumer:
+    build:
+      context: .
+      dockerfile: batch/Dockerfile
+    container_name: streamclick-batch-consumer
+    env_file:
+      - .env
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=redpanda:29092
+      - S3_ENDPOINT_URL=http://minio:9000
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    networks:
+      - streamclick-net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
 volumes:
   minio_data:
   postgres_data:

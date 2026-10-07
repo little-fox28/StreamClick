@@ -15,7 +15,7 @@ def init_processor():
     app = Application(
         broker_address=settings.KAFKA_BOOTSTRAP_SERVERS,
         consumer_group="streamclick-realtime-group-v1",
-        auto_offset_reset="earliest"
+        auto_offset_reset="latest"
     )
 
     input_topic = app.topic(

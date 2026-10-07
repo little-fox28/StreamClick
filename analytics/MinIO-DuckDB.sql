@@ -14,6 +14,7 @@ CREATE SECRET minio_secret (
 );
 
 -- Truy vấn 100 dòng đầu tiên
-SELECT * 
+SELECT 
+	*
 FROM read_parquet('s3://clickstream-lake/raw/clickstream/*/*/*/*/*.parquet', hive_partitioning=1)
-LIMIT 100;
+WHERE day = 4;

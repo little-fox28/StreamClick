@@ -169,8 +169,9 @@ docker compose ps
 #### Bước 3: Truy cập Web Consoles & API Docs
 - **FastAPI Swagger Docs:** `http://localhost:8000/docs`
 - **Redpanda Console UI:** `http://localhost:8080`
-- **MinIO Console UI:** `http://localhost:9001` (User: `minioadmin` / Pass: `minioadmin`)
-- **PostgreSQL Port:** `localhost:5432` (DB: `streamclick`, User: `postgres`, Pass: `postgres_secret_pw`)
+- **MinIO Console UI:** `http://localhost:9001`
+- **PostgreSQL Port:** `localhost:5432` 
+- **Grafana:** `http://localhost:3000`
 
 #### Bước 4: Khởi tạo môi trường & Cài đặt Dependencies
 Dự án sử dụng `uv` để quản lý dependencies và môi trường ảo độc lập:
@@ -187,7 +188,7 @@ uv run pytest -v
 
 ## 5. Hướng dẫn khởi chạy Pipelines
 
-### 🌊 A. Luồng Batch Processing (Redpanda -> MinIO Data Lake -> DuckDB)
+### A. Luồng Batch Processing (Redpanda -> MinIO Data Lake -> DuckDB)
 
 Batch Layer chịu trách nhiệm gom các sự kiện Clickstream theo micro-batch từ Redpanda, nén thành định dạng cột **Apache Parquet** và lưu trữ phân vùng (Hive Partitioning) trên **MinIO Object Storage**, sau đó phục vụ truy vấn phân tích tức thời qua **DuckDB**.
 

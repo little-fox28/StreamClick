@@ -114,6 +114,8 @@ services:
   # INGESTION API: FastAPI
   # ============================================================================
   ingestion-api:
+    profiles:
+      - app
     build:
       context: .
       dockerfile: api/Dockerfile
@@ -142,6 +144,8 @@ services:
   # STREAM PROCESSING: Quix Streams (Speed Layer)
   # ============================================================================
   stream-processor:
+    profiles:
+      - app
     build:
       context: .
       dockerfile: streaming/Dockerfile
@@ -186,6 +190,8 @@ services:
   # BATCH LAYER: DataLake Consumer
   # ============================================================================
   batch-consumer:
+    profiles:
+      - app
     build:
       context: .
       dockerfile: batch/Dockerfile

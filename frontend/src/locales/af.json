@@ -1,0 +1,261 @@
+{
+  "selectLanguage": "Kies Taal",
+  "hero": {
+    "title": {
+      "professional": {
+        "line1": "Professionele Toerusting",
+        "line2": "Vir Kampioene"
+      },
+      "passion": {
+        "line1": "Laat Jou Passie Los",
+        "line2": "Vir Die Veld"
+      },
+      "pride": {
+        "line1": "Dra Jou Kleure",
+        "line2": "Met Trots"
+      }
+    },
+    "desc": {
+      "professional": "Verhef jou spel met ons premium keuse van stewels en oefentoerusting.",
+      "passion": "Voorsiening van outentieke truie, stewels, balle en beskermende toerusting. Topgehalte vir elke wedstryd.",
+      "pride": "Amptelike tuis- en wegstelle van die wêreld se grootste klubs en nasionale spanne."
+    },
+    "alt": "Hero Beeld",
+    "goToSlide": "Gaan na skyfie {num}"
+  },
+  "shopNow": "Koop Nou",
+  "accessories": "Toebehore",
+  "productCategories": "Produk Kategorieë",
+  "viewAll": "Sien Alles",
+  "discover": "Ontdek",
+  "protection": "Beskerming",
+  "topLeagues": "Top Ligas",
+  "trendingNow": "Neigings Nou",
+  "newArrivals": "Nuwe Aankomelinge",
+  "viewDetails": "Sien Besonderhede",
+  "fastShipping": "Vinnige Versending",
+  "fastShippingDesc": "Gratis aflewering > R2000.",
+  "authentic": "Outentiek",
+  "authenticDesc": "100% outentieke toerusting.",
+  "easyReturns": "Maklike Terugsendings",
+  "easyReturnsDesc": "30-dae gratis terugsendings.",
+  "support": "24/7 Ondersteuning",
+  "supportDesc": "Kundige span.",
+  "customerSays": "Wat Kliënte Sê",
+  "whyJerseyPlug": "Hoekom JerseyPlug?",
+  "qualityCommitment": "Toewyding aan kwaliteit en diens.",
+  "officialBadge": "JerseyPlug Amptelik",
+  "categories": "Kategorieë",
+  "categories_list": {
+    "clubKits": "Klub Stelle",
+    "clubKitsDesc": "Premier League, La Liga...",
+    "nationalKits": "Nasionale Spanne",
+    "nationalKitsDesc": "Wêreldbeker & Euro Versamelings",
+    "accessoriesDesc": "Balle, Handskoene, Kouse...",
+    "protectiveGear": "Beskermende Toerusting",
+    "protectiveGearDesc": "Skeenbeskermers, Band"
+  },
+  "products": {
+    "argentinaHome": "Argentinië Tuis Trui 2024 - Messi 10",
+    "premierBall": "Nike Premier Wedstrydbal 2025",
+    "realMadridHome": "Real Madrid Tuisstel 24/25",
+    "shinGuards": "Pro Carbon Skeenbeskermers",
+    "italyHome": "Italië Tuis 2024",
+    "pumaBoots": "Puma Future Ultimate",
+    "bayernAway": "Bayern Munich Wegstel 24/25",
+    "vietnamTraining": "Viëtnam Oefenstel",
+    "tags": {
+      "bestSeller": "Beste Verkoper",
+      "new": "Nuut",
+      "hot": "Warm",
+      "limited": "Beperk"
+    },
+    "types": {
+      "national": "Nasionaal",
+      "accessories": "Toebehore",
+      "boots": "Stewels"
+    }
+  },
+  "rating": "Gradering",
+  "ratingValue": "5,0",
+  "backToList": "Terug na Nasionale Spanne",
+  "infoTitle": "Produkinligting",
+  "selectSize": "Kies Grootte",
+  "sizeGuide": "Grootte Gids",
+  "pleaseSelectSize": "Kies asseblief 'n grootte",
+  "personalization": "Verpersoonliking",
+  "addedToCart": "By die mandjie gevoeg!",
+  "failedAddToCart": "Kon nie by mandjie voeg nie",
+  "buyNow": "Koop Nou",
+  "addToCart": "Voeg by Mandjie",
+  "relatedProducts": "Verwante Produkte",
+  "inStock": "In Voorraad",
+  "outOfStock": "Uit Voorraad",
+  "reviews": "Resensies",
+  "save": "Bespaar",
+  "payJustNowPrefix": "Betaal slegs",
+  "payJustNowSuffix": "in 4 rentevrye paaiemente met",
+  "relatedTitle": "Maak gereed vir Wedstryddag",
+  "sizeGuideTitle": "Grootte Gids",
+  "sizeGuideSubtitle": "Mates vir Mans se 'Authentic' Trui.",
+  "sizeGuideFit": "Hierdie is 'slim fit' (speler weergawe).",
+  "chest": "Bors (cm)",
+  "waist": "Middel (cm)",
+  "size": "Grootte",
+  "proTip": "Wenner-wenk",
+  "sizeTip": "As jy tussen groottes is of 'n losser pasvorm verkies (soos 'n Fan Replica), beveel ons sterk aan dat jy een grootte groter kies.",
+  "totalEst": "Totaal Beraam.",
+  "adding": "Adding",
+  "personalizeTitle": "Verpersoonlik Jou Stel",
+  "optional": "(Opsioneel)",
+  "nameOnBack": "NAAM OP RUG",
+  "number": "NOMMER",
+  "placeholderName": "B.V. MESSI",
+  "preview": "Voorskou",
+  "addPatch": "Voeg Kenteken By",
+  "testimonials": [
+    {
+      "name": "Michael T.",
+      "role": "Man Utd Ondersteuner",
+      "comment": "Uitstekende trui kwaliteit, skerp drukwerk.",
+      "rating": 5
+    },
+    {
+      "name": "David K.",
+      "role": "Amateur Speler",
+      "comment": "Die stewels pas perfek en het goeie greep.",
+      "rating": 5
+    },
+    {
+      "name": "Sarah Johnson",
+      "role": "Van Kaapstad",
+      "comment": "Goeie versameling Springbok-truie!",
+      "rating": 4
+    }
+  ],
+  "header": {
+    "leagues": {
+      "premierLeague": "Premier League",
+      "laLiga": "La Liga",
+      "bundesliga": "Bundesliga",
+      "serieA": "Serie A",
+      "ligue1": "Ligue 1",
+      "vleague": "V-League",
+      "mls": "MLS",
+      "saudiProLeague": "Saudi Pro League",
+      "jleague": "J.League",
+      "kleague": "K League",
+      "championsLeague": "Champions League",
+      "europaLeague": "Europa League"
+    },
+    "teams": {
+      "manchesterCity": "Manchester City",
+      "arsenal": "Arsenal",
+      "liverpool": "Liverpool",
+      "manchesterUnited": "Manchester United",
+      "chelsea": "Chelsea",
+      "realMadrid": "Real Madrid",
+      "barcelona": "Barcelona",
+      "atleticoMadrid": "Atletico Madrid",
+      "sevilla": "Sevilla",
+      "valencia": "Valencia",
+      "bayernMunich": "Bayern Munich",
+      "dortmund": "Borussia Dortmund",
+      "leverkusen": "Bayer Leverkusen",
+      "rbLeipzig": "RB Leipzig",
+      "eintrachtFrankfurt": "Eintracht Frankfurt",
+      "interMilan": "Inter Milan",
+      "acMilan": "AC Milan",
+      "juventus": "Juventus",
+      "napoli": "Napoli",
+      "asRoma": "AS Roma",
+      "psg": "Paris Saint-Germain",
+      "marseille": "Marseille",
+      "monaco": "AS Monaco",
+      "lyon": "Lyon",
+      "lille": "Lille"
+    },
+    "nations": {
+      "vietnam": "Vietnam",
+      "argentina": "Argentina",
+      "france": "France",
+      "brazil": "Brazil",
+      "germany": "Germany",
+      "spain": "Spain",
+      "southAfrica": "South Africa",
+      "portugal": "Portugal",
+      "japan": "Japan",
+      "india": "India",
+      "indonesia": "Indonesia",
+      "mexico": "Mexico"
+    },
+    "headings": {
+      "nationalTeams": "Nasionale Spanne",
+      "otherLeagues": "Ander Ligas"
+    },
+    "navigation": {
+      "worldCup2026": "Wêreldbeker 2026",
+      "top5Leagues": "Top 5 Ligas",
+      "national": "Nasionaal",
+      "other": "Ander"
+    },
+    "actions": {
+      "viewAll": "Sien Alles"
+    },
+    "search": {
+      "placeholder": "Soek truie, ligas, spanne..."
+    },
+    "mobile": {
+      "language": "Taal"
+    }
+  },
+  "footer": {
+    "brand": {
+      "description": "Jou uiteindelike bestemming vir premium sokkertruie en professionele toerusting. Dra jou passie, speel met trots.",
+      "facebook": "Volg ons op Facebook",
+      "instagram": "Volg ons op Instagram",
+      "twitter": "Volg ons op Twitter",
+      "youtube": "Volg ons op Youtube"
+    },
+    "headings": {
+      "shop": "Winkel",
+      "support": "Ondersteuning",
+      "contact": "Kontak Ons"
+    },
+    "links": {
+      "shop": {
+        "newArrivals": "Nuwe Aankomelinge",
+        "premierLeague": "Premier League",
+        "laLiga": "La Liga",
+        "nationalTeams": "Nasionale Spanne",
+        "trainingGear": "Oefentoerusting",
+        "giftCards": "Geskenkbewyse"
+      },
+      "support": {
+        "helpCenter": "Hulpsentrum",
+        "trackOrder": "Volg Bestelling",
+        "returnsExchanges": "Terugsendings & Ruilings",
+        "sizeGuide": "Grootte Gids",
+        "shippingInfo": "Versendingsinligting",
+        "contactUs": "Kontak Ons"
+      },
+      "legal": {
+        "privacyPolicy": "Privaatheidsbeleid",
+        "termsOfService": "Diensvoorwaardes",
+        "cookiePolicy": "Koekiebeleid",
+        "paiaManual": "PAIA Handleiding"
+      }
+    },
+    "contact": {
+      "address": "Kaapstad, Suid-Afrika",
+      "phone": "+27 21 555 0123",
+      "email": "support@jerseyplug.co.za"
+    },
+    "trust": {
+      "weAccept": "Ons Aanvaar"
+    },
+    "legal": {
+      "copyright": "© {year} JerseyPlug Amptelik. Alle regte voorbehou."
+    }
+  }
+}

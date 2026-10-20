@@ -1,0 +1,261 @@
+{
+  "selectLanguage": "Select Language",
+  "hero": {
+    "title": {
+      "professional": {
+        "line1": "Professional Gear",
+        "line2": "For Champions"
+      },
+      "passion": {
+        "line1": "Unleash Your Passion",
+        "line2": "For The Pitch"
+      },
+      "pride": {
+        "line1": "Wear Your Colors",
+        "line2": "With Pride"
+      }
+    },
+    "desc": {
+      "professional": "Elevate your game with our premium selection of boots and training equipment.",
+      "passion": "Providing authentic jerseys, boots, balls, and protective gear. Top quality for every match.",
+      "pride": "Official home and away kits from the world's biggest clubs and national teams."
+    },
+    "alt": "Hero Image",
+    "goToSlide": "Go to slide {num}"
+  },
+  "shopNow": "Shop Now",
+  "accessories": "Accessories",
+  "productCategories": "Product Categories",
+  "viewAll": "View All",
+  "discover": "Discover",
+  "protection": "Protection",
+  "topLeagues": "Top Leagues",
+  "trendingNow": "Trending Now",
+  "newArrivals": "New Arrivals",
+  "viewDetails": "View Details",
+  "fastShipping": "Fast Shipping",
+  "fastShippingDesc": "Free shipping > R2000.",
+  "authentic": "Authentic",
+  "authenticDesc": "100% authentic gear.",
+  "easyReturns": "Easy Returns",
+  "easyReturnsDesc": "30-day free returns.",
+  "support": "24/7 Support",
+  "supportDesc": "Expert team.",
+  "customerSays": "What Customers Say",
+  "whyJerseyPlug": "Why JerseyPlug?",
+  "qualityCommitment": "Commitment to quality and service.",
+  "officialBadge": "JerseyPlug Official",
+  "categories": "Categories",
+  "categories_list": {
+    "clubKits": "Club Kits",
+    "clubKitsDesc": "Premier League, La Liga...",
+    "nationalKits": "National Teams",
+    "nationalKitsDesc": "World Cup & Euro Collections",
+    "accessoriesDesc": "Balls, Gloves, Socks...",
+    "protectiveGear": "Protective Gear",
+    "protectiveGearDesc": "Shin guards, Tape"
+  },
+  "products": {
+    "argentinaHome": "Argentina Home Jersey 2024 - Messi 10",
+    "premierBall": "Nike Premier Match Ball 2025",
+    "realMadridHome": "Real Madrid Home Kit 24/25",
+    "shinGuards": "Pro Carbon Shin Guards",
+    "italyHome": "Italy Home 2024",
+    "pumaBoots": "Puma Future Ultimate",
+    "bayernAway": "Bayern Munich Away 24/25",
+    "vietnamTraining": "Vietnam Training Kit",
+    "tags": {
+      "bestSeller": "Best Seller",
+      "new": "New",
+      "hot": "Hot",
+      "limited": "Limited"
+    },
+    "types": {
+      "national": "National",
+      "accessories": "Accessories",
+      "boots": "Boots"
+    }
+  },
+  "rating": "Rating",
+  "ratingValue": "5.0",
+  "backToList": "Back to National Teams",
+  "infoTitle": "Product Information",
+  "selectSize": "Select Size",
+  "sizeGuide": "Size Guide",
+  "pleaseSelectSize": "Please select a size",
+  "personalization": "Personalization",
+  "addedToCart": "Added to cart!",
+  "failedAddToCart": "Failed to add to cart",
+  "buyNow": "Buy Now",
+  "addToCart": "Add to Cart",
+  "relatedProducts": "Related Products",
+  "inStock": "In Stock",
+  "outOfStock": "Out of Stock",
+  "reviews": "Reviews",
+  "save": "Save",
+  "payJustNowPrefix": "Pay just",
+  "payJustNowSuffix": "in 4 interest-free installments with",
+  "relatedTitle": "Gear Up for Match Day",
+  "sizeGuideTitle": "Size Guide",
+  "sizeGuideSubtitle": "Measurement for Men's Authentic Jersey.",
+  "sizeGuideFit": "These are slim fit (player version).",
+  "chest": "Chest (cm)",
+  "waist": "Waist (cm)",
+  "size": "Size",
+  "proTip": "Pro Tip",
+  "sizeTip": "If you are between sizes or prefer a looser fit (like a Fan Replica), we strongly recommend going one size up.",
+  "totalEst": "Total Est.",
+  "adding": "Adding",
+  "personalizeTitle": "Personalize Your Kit",
+  "optional": "(Optional)",
+  "nameOnBack": "NAME ON BACK",
+  "number": "NUMBER",
+  "placeholderName": "E.G. MESSI",
+  "preview": "Preview",
+  "addPatch": "Add Badge / Patch",
+  "testimonials": [
+    {
+      "name": "Michael T.",
+      "role": "Man Utd Fan",
+      "comment": "Excellent jersey quality, sharp printing.",
+      "rating": 5
+    },
+    {
+      "name": "David K.",
+      "role": "Amateur Player",
+      "comment": "The boots fit perfectly and have great grip.",
+      "rating": 5
+    },
+    {
+      "name": "Sarah Johnson",
+      "role": "From Cape Town",
+      "comment": "Great collection of Springboks jerseys!",
+      "rating": 4
+    }
+  ],
+  "header": {
+    "leagues": {
+      "premierLeague": "Premier League",
+      "laLiga": "La Liga",
+      "bundesliga": "Bundesliga",
+      "serieA": "Serie A",
+      "ligue1": "Ligue 1",
+      "vleague": "V-League",
+      "mls": "MLS",
+      "saudiProLeague": "Saudi Pro League",
+      "jleague": "J.League",
+      "kleague": "K League",
+      "championsLeague": "Champions League",
+      "europaLeague": "Europa League"
+    },
+    "teams": {
+      "manchesterCity": "Manchester City",
+      "arsenal": "Arsenal",
+      "liverpool": "Liverpool",
+      "manchesterUnited": "Manchester United",
+      "chelsea": "Chelsea",
+      "realMadrid": "Real Madrid",
+      "barcelona": "Barcelona",
+      "atleticoMadrid": "Atletico Madrid",
+      "sevilla": "Sevilla",
+      "valencia": "Valencia",
+      "bayernMunich": "Bayern Munich",
+      "dortmund": "Borussia Dortmund",
+      "leverkusen": "Bayer Leverkusen",
+      "rbLeipzig": "RB Leipzig",
+      "eintrachtFrankfurt": "Eintracht Frankfurt",
+      "interMilan": "Inter Milan",
+      "acMilan": "AC Milan",
+      "juventus": "Juventus",
+      "napoli": "Napoli",
+      "asRoma": "AS Roma",
+      "psg": "Paris Saint-Germain",
+      "marseille": "Marseille",
+      "monaco": "AS Monaco",
+      "lyon": "Lyon",
+      "lille": "Lille"
+    },
+    "nations": {
+      "vietnam": "Vietnam",
+      "argentina": "Argentina",
+      "france": "France",
+      "brazil": "Brazil",
+      "germany": "Germany",
+      "spain": "Spain",
+      "southAfrica": "South Africa",
+      "portugal": "Portugal",
+      "japan": "Japan",
+      "india": "India",
+      "indonesia": "Indonesia",
+      "mexico": "Mexico"
+    },
+    "headings": {
+      "nationalTeams": "National Teams",
+      "otherLeagues": "Other Leagues"
+    },
+    "navigation": {
+      "worldCup2026": "World Cup 2026",
+      "top5Leagues": "Top 5 Leagues",
+      "national": "National",
+      "other": "Other"
+    },
+    "actions": {
+      "viewAll": "View All"
+    },
+    "search": {
+      "placeholder": "Search jerseys, leagues, teams..."
+    },
+    "mobile": {
+      "language": "Language"
+    }
+  },
+  "footer": {
+    "brand": {
+      "description": "Your ultimate destination for premium football jerseys and professional gear. Wear your passion, play with pride.",
+      "facebook": "Follow us on Facebook",
+      "instagram": "Follow us on Instagram",
+      "twitter": "Follow us on Twitter",
+      "youtube": "Follow us on Youtube"
+    },
+    "headings": {
+      "shop": "Shop",
+      "support": "Support",
+      "contact": "Get in Touch"
+    },
+    "links": {
+      "shop": {
+        "newArrivals": "New Arrivals",
+        "premierLeague": "Premier League",
+        "laLiga": "La Liga",
+        "nationalTeams": "National Teams",
+        "trainingGear": "Training Gear",
+        "giftCards": "Gift Cards"
+      },
+      "support": {
+        "helpCenter": "Help Center",
+        "trackOrder": "Track Order",
+        "returnsExchanges": "Returns & Exchanges",
+        "sizeGuide": "Size Guide",
+        "shippingInfo": "Shipping Info",
+        "contactUs": "Contact Us"
+      },
+      "legal": {
+        "privacyPolicy": "Privacy Policy",
+        "termsOfService": "Terms of Service",
+        "cookiePolicy": "Cookie Policy",
+        "paiaManual": "PAIA Manual"
+      }
+    },
+    "contact": {
+      "address": "Cape Town, South Africa",
+      "phone": "+27 21 555 0123",
+      "email": "support@jerseyplug.co.za"
+    },
+    "trust": {
+      "weAccept": "We Accept"
+    },
+    "legal": {
+      "copyright": "© {year} JerseyPlug Official. All rights reserved."
+    }
+  }
+}

@@ -1,5 +1,7 @@
 
+from typing import List, Union
 from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
 
@@ -54,35 +56,47 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Enable CORS for browser preflight and cross-origin requests from frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.post("/track",
           tags=["Ingestion"],
           status_code=status.HTTP_202_ACCEPTED,
-          summary="Ingest Clickstream Event"
+          summary="Ingest Clickstream Events"
 )
 async def track_event(
-        event: ClickstreamEvent,
+        payload: Union[ClickstreamEvent, List[ClickstreamEvent]],
         publisher: AbstractMessagePublisher = Depends(get_message_publisher)
 ):
-    # Tiếp nhận event, xác thực data Contract và đẩy bất đồng bộ vào Message Broker.
-    partition_key = event.user_id or event.anonymous_id
-    payload = event.to_message_dict()
+    """Tiếp nhận event đơn lẻ hoặc batch events, xác thực Data Contract và đẩy bất đồng bộ vào Message Broker."""
+    events = [payload] if isinstance(payload, ClickstreamEvent) else payload
 
-    success = publisher.publish(
-        topic=settings.KAFKA_TOPIC_CLICKSTREAM,
-        message=payload,
-        key=partition_key
-    )
+    for event in events:
+        partition_key = event.user_id or event.anonymous_id
+        message_dict = event.to_message_dict()
 
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Broker ingestion queue is unavailable."
+        success = publisher.publish(
+            topic=settings.KAFKA_TOPIC_CLICKSTREAM,
+            message=message_dict,
+            key=partition_key
         )
+
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Broker ingestion queue is unavailable."
+            )
 
     return {
         "status": "success",
-        "envent_id": event.event_id,
-        "timestamp": payload["timestamp"]
+        "count": len(events),
+        "event_ids": [e.event_id for e in events]
     }
 
 # Health check endpoint

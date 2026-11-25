@@ -1,269 +1,144 @@
-# StreamClick: E-commerce Clickstream Tracking System
+# StreamClick — E-Commerce Clickstream Analytics Platform
 
-Hệ thống thu thập hành vi người dùng và xử lý dữ liệu Clickstream thương mại điện tử theo kiến trúc **Lambda Architecture**. Dự án được thiết kế theo chuẩn **12-Factor App** & **Cloud-Native**, hoạt động độc lập trên môi trường Self-hosted qua **Docker Compose** và sẵn sàng migrate 1-to-1 lên **Google Cloud Platform (GCP)**.
+Nền tảng thu thập, xử lý thời gian thực và lưu trữ phân tích dữ liệu hành vi người dùng (Clickstream) cho hệ thống E-commerce theo kiến trúc **Lambda Architecture**, tuân thủ chuẩn **12-Factor App**, **Data Contracts** và **Ports & Adapters**.
 
----
-
-## 1. Architecture Overview (Tổng quan kiến trúc)
-
-StreamClick kết hợp cả hai luồng xử lý thời gian thực (**Speed Layer**) và xử lý theo lô/lưu trữ dài hạn (**Batch Layer**) để tối ưu hóa giữa độ trễ (latency) thấp và độ chính xác (completeness) của dữ liệu.
-
-```
-                             +-----------------------+
-                             |   Clickstream Events  |
-                             |   (Web / Mobile App)  |
-                             +-----------+-----------+
-                                         |
-                                         v HTTP POST /v1/events
-                             +-----------------------+
-                             |     Ingestion API     |
-                             |   (FastAPI - Python)  |
-                             +-----------+-----------+
-                                         |
-                                         v Produce Event
-                             +-----------------------+
-                             |    Message Broker     |
-                             |      (Redpanda)       |
-                             +-----+-----------+-----+
-                                   |           |
-            [ Speed Layer ]        |           |        [ Batch Layer ]
-    +------------------------------+           +------------------------------+
-    |                                                                         |
-    v                                                                         v
-+-----------------------+                                         +-----------------------+
-|   Stream Processing   |                                         |  Batch Lake Ingestion |
-|    (Quix Streams)     |                                         |  (Consumer to Parquet)|
-+-----------+-----------+                                         +-----------+-----------+
-            |                                                                 |
-            v Realtime Aggregations                                           v Partitioned Parquet
-+-----------------------+                                         +-----------------------+
-|      Serving DB       |                                         |       Data Lake       |
-|     (PostgreSQL)      |                                         |     (MinIO - S3)      |
-+-----------+-----------+                                         +-----------+-----------+
-            |                                                                 |
-            v Low-Latency Dashboard Queries                                   v Analytical SQL Queries
-+-----------------------+                                         +-----------------------+
-|  Real-time Dashboards |                                         |     OLAP Engine       |
-|    (Speed Serving)    |                                         |       (DuckDB)        |
-+-----------------------+                                         +-----------------------+
-```
-
-### Luồng xử lý dữ liệu (Data Flow):
-1. **Ingestion Layer (Stateless API):**
-   - **FastAPI** tiếp nhận các HTTP POST event payload (Clickstream JSON) với tính năng validate schema tự động qua Pydantic.
-   - Sử dụng **Adapter Pattern** (`MessagePublisher`) để đẩy event vào **Redpanda** topic `events.clickstream.raw`.
-2. **Speed Layer (Real-time Stream Processing):**
-   - **Quix Streams** liên tục consume message từ Redpanda theo Stream Processing model.
-   - Thực hiện aggregation (ví dụ: đếm lượt xem sản phẩm theo thời gian thực, rolling windows) và ghi kết quả vào **PostgreSQL** (Serving Database).
-3. **Batch Layer (Immutable Raw Data Lake):**
-   - Batch Ingestion Service pull dữ liệu theo micro-batch từ Redpanda, chuyển đổi thành định dạng nén cột (**Parquet**).
-   - Lưu trữ vào **MinIO** (S3-compatible Object Storage) theo định dạng partition theo thời gian: `raw/events/year=YYYY/month=MM/day=DD/*.parquet`.
-4. **Serving & OLAP Layer:**
-   - **Speed Queries:** Dashboard thời gian thực truy vấn trực tiếp từ **PostgreSQL** với latency mili-giây.
-   - **Analytical / Deep Analytics:** **DuckDB** chạy các câu lệnh OLAP SQL trực tiếp trên các file Parquet nằm trong MinIO mà không cần nạp lại dữ liệu vào database server.
+> [!NOTE]
+> **Lưu ý hiển thị sơ đồ (Mermaid.js):** Toàn bộ sơ đồ kiến trúc, luồng dữ liệu và ERD trong `README.md` và thư mục `docs/` sử dụng cú pháp **Mermaid**. Nếu bạn đọc tài liệu trực tiếp trên IDE (chưa xem trên GitHub), vui lòng bật hoặc cài đặt plugin hỗ trợ **Mermaid** (ví dụ: bật *Mermaid* trong *Settings -> Languages & Frameworks -> Markdown* trên **PyCharm / IntelliJ**, hoặc cài extension *Markdown Preview Mermaid Support* trên **VS Code**) để hiển thị đầy đủ các sơ đồ trực quan.
 
 ---
 
-## 2. Core Design Principles (Nguyên tắc thiết kế)
+## Vấn đề & Giải pháp (Problem Statement)
 
-* **12-Factor App & Cloud-Native:** Toàn bộ cấu hình hệ thống được externalize qua biến môi trường (`.env` và `pydantic-settings`). Không hard-code credentials hay endpoint.
-* **Interface Abstraction (Adapter Pattern):**
-  - `MessagePublisher` (Abstract Base Class): Tách biệt logic kinh doanh khỏi Kafka/Redpanda. Khi chuyển sang GCP Pub/Sub chỉ cần inject `PubSubPublisher`.
-  - `StorageClient` (Abstract Base Class): Tách biệt lưu trữ MinIO/S3. Khi chuyển sang Google Cloud Storage chỉ cần inject `GCSStorageClient`.
-* **Stateless Services:** Các container API và Stream Processor không lưu trữ trạng thái trên local disk, sẵn sàng scale-out ngang (Horizontal Auto-scaling).
+Hệ thống E-commerce phát sinh luồng sự kiện tương tác liên tục (`view_item`, `product_view`, `add_to_cart`, `checkout`, `purchase`) với hai nhu cầu khai thác đối lập:
+
+1. **Low-Latency Operational Metrics (Speed Layer):** Đội ngũ Vận hành cần theo dõi biến động lượt tương tác sản phẩm theo từng khung cửa sổ 60 giây gần thời gian thực.
+2. **Immutable Historical Analytics (Batch Layer):** Đội ngũ Data Engineering / BI cần lưu trữ toàn bộ sự kiện thô dưới định dạng nén cột **Apache Parquet** phân vùng theo thời gian để chạy truy vấn **OLAP SQL** chi phí thấp mà không làm nghẽn cơ sở dữ liệu giao dịch.
+
+**StreamClick** giải quyết đồng thời hai bài toán trên bằng một pipeline phân tán gọn nhẹ chạy độc lập qua **Docker Compose** (~1.31 GiB RAM giới hạn cho toàn cụm container), đồng thời tách biệt hoàn toàn Core Domain khỏi SDK hạ tầng để sẵn sàng chuyển dịch lên Cloud.
 
 ---
 
-## 3. Project Structure (Cấu trúc thư mục)
+## Kiến trúc Tổng quan (As-Is Architecture)
 
-```
-StreamClick/
-├── .env.example                     # Mẫu biến môi trường (12-Factor config)
-├── .gitignore
-├── README.md                        # Tài liệu hệ thống
-├── docker-compose.yml               # Khởi chạy toàn bộ hạ tầng cục bộ
-├── requirements.txt                 # Danh sách Python dependencies
-├── setup_project.sh                 # Script tự động tạo cây thư mục
-│
-├── core/                            # Shared domain logic & abstractions
-│   ├── __init__.py
-│   ├── config.py                    # Externalized settings (Pydantic BaseSettings)
-│   ├── schemas/                     # Event Data Contracts
-│   │   ├── __init__.py
-│   │   └── clickstream.py           # Pydantic Schema cho Clickstream Event
-│   └── adapters/                    # Adapter Pattern implementations
-│       ├── __init__.py
-│       ├── broker/                  # Redpanda / Kafka Adapter
-│       └── storage/                 # MinIO / S3 Adapter
-│
-├── simulator/                       # Data Generator & Simulator
-│   ├── __init__.py
-│   ├── dataset.py                   # Tải Kaggle Dataset tự động
-│   ├── transformer.py               # Biến đổi dữ liệu sang schema chuẩn
-│   ├── runner.py                    # Worker bắn sự kiện có pacing/delay
-│   └── main.py                      # CLI Simulator Entrypoint
-│
-├── api/                             # Ingestion Layer
-│   ├── __init__.py
-│   ├── Dockerfile
-│   └── main.py                      # FastAPI App (Stateless Ingestion)
-│
-├── streaming/                       # Speed Layer
-│   ├── __init__.py
-│   ├── Dockerfile
-│   └── pipeline.py                  # Quix Streams real-time pipeline
-│
-├── batch/                           # Batch Layer (Storage / Data Lake)
-│   ├── __init__.py
-│   ├── consumer.py                  # Consumer module alias
-│   └── datalake_consumer.py         # Micro-batching & Parquet Archiver lên MinIO
-│
-├── analytics/                       # OLAP & Serving Layer
-│   └── duckdb.py                    # OLAP Engine truy vấn MinIO qua DuckDB
-│
-└── infrastructure/                  # Cấu hình hạ tầng & Script tiện ích
-    ├── docker/
-    │   └── postgres/
-    │       └── init.sql             # SQL Schema cho Speed Layer
-    └── scripts/
-        └── produce_mock_events.py   # Script bắn mock events kiểm thử E2E
+```mermaid
+flowchart LR
+    subgraph Clients["Event Producers"]
+        Storefront["JerseyPlug Web App (React 19 + SDK)"]
+        Simulator["Replay Simulator CLI (Kaggle CSV)"]
+    end
+
+    subgraph Ingestion["Ingestion Layer"]
+        API["FastAPI Ingestion API (POST /track :8000)"]
+    end
+
+    subgraph Broker["Message Backbone"]
+        Redpanda["Redpanda Broker (events.clickstream.raw :9092)"]
+    end
+
+    subgraph Speed["Speed Layer (Near Real-Time)"]
+        Quix["Quix Streams (60s Tumbling Window)"]
+        Postgres[("PostgreSQL 16 (realtime_product_metrics :5432)")]
+        Grafana["Grafana UI (:3000)"]
+    end
+
+    subgraph Batch["Batch & OLAP Layer (Historical)"]
+        Consumer["DataLake Consumer (In-Memory Batch)"]
+        MinIO[("MinIO S3 (Hive Parquet :9000)")]
+        DuckDB["DuckDB OLAP (httpfs + Pruning)"]
+    end
+
+    Storefront -->|"Dual-Flush JSON / sendBeacon"| API
+    Simulator -->|"Pooled HTTP POST"| API
+    API -->|"RedpandaPublisher (acks=all, snappy)"| Redpanda
+    Redpanda -->|"streamclick-realtime-group"| Quix
+    Quix -->|"Idempotent UPSERT"| Postgres
+    Postgres --> Grafana
+    Redpanda -->|"streamclick-datalake-group"| Consumer
+    Consumer -->|"PyArrow BytesIO Upload"| MinIO
+    MinIO -->|"S3 Parquet Scan"| DuckDB
 ```
 
 ---
 
-## 4. Prerequisites & Setup (Cài đặt & Khởi chạy)
+## Điểm nhấn Kỹ thuật (Core Engineering Highlights)
 
-### Yêu cầu hệ thống:
-- **Docker** và **Docker Compose** (v2.0+)
-- **Python** 3.10+
-- **uv** (Package manager hiện đại cho Python)
+* **Strict 4W1H Data Contract & PII Whitelist:** Mọi payload đi qua `POST /track` đều được xác thực bằng Pydantic V2 (`ClickstreamEvent`), tự động loại bỏ các trường ngoài danh sách cho phép (`extra="ignore"`) để ngăn rò rỉ PII ngay từ biên mạng và trả về `202 Accepted` bất đồng bộ.
+* **Hexagonal Ports & Adapters:** Tách biệt giao diện `AbstractMessagePublisher` và `AbstractStorageClient` khỏi triển khai cụ thể (`RedpandaPublisher`, `MinIOClient`), kết hợp **Thread-Safe Double-Checked Locking Singleton** và HTTP/TCP Connection Pooling.
+* **Dual-Pipeline Reliability:**
+  * **Speed Layer:** `Quix Streams` gom nhóm theo cửa sổ **60-second Tumbling Window** và ghi `ON CONFLICT DO UPDATE` (Idempotent UPSERT) vào `PostgreSQL`.
+  * **Batch Layer:** `DataLakeConsumer` tắt `enable.auto.commit`, gom micro-batch trên RAM (`5,000` bản ghi hoặc `60s`), nén **Parquet** trực tiếp qua `io.BytesIO` (không ghi file tạm ra đĩa), đẩy lên `MinIO` theo phân vùng Hive `year/month/day/hour` rồi mới commit Kafka offset (*At-Least-Once delivery*).
+* **Resilient Browser Tracking SDK:** TypeScript SDK trên storefront tích hợp cơ chế **Dual-Flush** (`10` events hoặc mỗi `3s`), quản lý phiên trượt 30 phút (*Sliding Session TTL*), và tự động xả hàng đợi khẩn cấp qua `navigator.sendBeacon` khi người dùng đóng tab.
 
-### Hướng dẫn từng bước:
+---
 
-#### Bước 1: Khởi tạo biến môi trường
-Sao chép file cấu hình mẫu `.env.example` thành `.env` để thiết lập các thông số chạy cục bộ:
+## Khởi chạy Nhanh trong 3 Bước (Quickstart)
 
-**Trên macOS/Linux hoặc Windows PowerShell:**
+> **Yêu cầu:** Docker Compose v2+, Python 3.10+, và [`uv`](https://docs.astral.sh/uv/).
+
+### Bước 1 — Cấu hình biến môi trường & bật hạ tầng cục bộ
+
 ```bash
 cp .env.example .env
-```
-
-**Trên Windows Command Prompt (CMD):**
-```cmd
-copy .env.example .env
-```
-
-*(Mở file `.env` và tùy chỉnh thông số nếu cần thiết)*
-
-#### Bước 2: Khởi chạy hạ tầng bằng Docker Compose
-Khởi động toàn bộ các service hạ tầng (Redpanda, MinIO, PostgreSQL, Redpanda Console):
-```bash
+# Điền các biến bắt buộc trong .env (xem chi tiết tại docs/operations/runbook.md)
 docker compose up -d
 ```
 
-Kiểm tra trạng thái các container:
-```bash
-docker compose ps
-```
-
-#### Bước 3: Truy cập Web Consoles & API Docs
-- **FastAPI Swagger Docs:** `http://localhost:8000/docs`
-- **Redpanda Console UI:** `http://localhost:8080`
-- **MinIO Console UI:** `http://localhost:9001`
-- **PostgreSQL Port:** `localhost:5432` 
-- **Grafana:** `http://localhost:3000`
-
-#### Bước 4: Khởi tạo môi trường & Cài đặt Dependencies
-Dự án sử dụng `uv` để quản lý dependencies và môi trường ảo độc lập:
+### Bước 2 — Cài đặt môi trường Python & khởi chạy các dịch vụ Pipeline
 
 ```bash
-# 1. Cài đặt dependencies vào .venv
 uv sync
 
-# 2. Chạy Test Suite (Unit Tests)
-uv run pytest -v
+# Mở 3 tab terminal riêng biệt (hoặc dùng `docker compose --profile app up -d`):
+uv run uvicorn api.main:app --host 0.0.0.0 --port 8000
+uv run python -m streaming.processor
+uv run python batch/datalake_consumer.py
 ```
+
+### Bước 3 — Bắn sự kiện giả lập & kiểm tra dữ liệu
+
+```bash
+# Bắn 200 sự kiện thử nghiệm vào Ingestion API
+uv run python -m simulator.main -l 200 -d 0.01
+
+# Chạy bộ kiểm thử tích hợp các module cốt lõi
+uv run python infrastructure/scripts/test_pipeline_modules.py --all
+```
+
+Truy cập nhanh các giao diện quản trị cục bộ:
+* **Swagger API Docs:** `http://localhost:8000/docs`
+* **Redpanda Console:** `http://localhost:8080`
+* **MinIO Console:** `http://localhost:9001`
+* **Grafana UI:** `http://localhost:3000`
 
 ---
 
-## 5. Hướng dẫn khởi chạy Pipelines
+## Danh mục Tài liệu Hệ thống (Documentation Hub)
 
-### A. Luồng Batch Processing (Redpanda -> MinIO Data Lake -> DuckDB)
-
-Batch Layer chịu trách nhiệm gom các sự kiện Clickstream theo micro-batch từ Redpanda, nén thành định dạng cột **Apache Parquet** và lưu trữ phân vùng (Hive Partitioning) trên **MinIO Object Storage**, sau đó phục vụ truy vấn phân tích tức thời qua **DuckDB**.
-
-```
-[Simulator] ──POST /track──> [FastAPI :8000] ──Produce──> [Redpanda :9092]
-                                                                │
-                                   ┌────────────────────────────┘ (topic: events.clickstream.raw)
-                                   ▼
-                      [ DataLake Consumer ] (batch/datalake_consumer.py)
-                         ├── 1. Buffer sự kiện vào RAM
-                         ├── 2. Micro-batching (batch_size hoặc flush_interval)
-                         └── 3. Nén Apache Parquet
-                                   │
-                                   ▼ (Upload S3 API)
-                      [ MinIO Data Lake :9000 ]
-                         └── raw/clickstream/year=YYYY/month=MM/day=DD/hour=HH/*.parquet
-                                   │
-                                   ▼ (OLAP Partition Pruning)
-                              [ DuckDB ] (analytics/duckdb_olap.py)
-```
-
-#### Các bước chạy Batch Pipeline (Mở từng tab Terminal):
-
-1. **Terminal 1 - Khởi chạy Ingestion API:**
-   ```bash
-   uv run uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
-   ```
-
-2. **Terminal 2 - Khởi chạy Batch DataLake Consumer:**
-   ```bash
-   uv run python batch/datalake_consumer.py
-   ```
-   > Consumer sẽ lắng nghe topic `events.clickstream.raw`, gom micro-batch và định kỳ đẩy Parquet lên MinIO `streamclick-datalake`.
-
-3. **Terminal 3 - Bắn sự kiện mô phỏng từ Simulator:**
-   ```bash
-   # Tải Kaggle Dataset và bắn 100 sự kiện mẫu với delay 0.05s
-   uv run python -m simulator.main -l 100 -d 0.05
-   
-   # Chỉ định file CSV cụ thể và giới hạn 500 dòng
-   uv run python -m simulator.main -f "data/raw/ecommerce_clickstream_transactions.csv" -l 500 -d 0.01
-
-   # Đọc toàn bộ file CSV (bỏ tham số -l hoặc truyền -l 0)
-   uv run python -m simulator.main -f "data/raw/ecommerce_clickstream_transactions.csv" -d 0.01
-   ```
-
-4. **Terminal 4 - Chạy truy vấn phân tích OLAP với DuckDB:**
-   Sau khi dữ liệu đã được Consumer đẩy lên MinIO, thực hiện phân tích SQL trực tiếp trên các file Parquet:
-   ```bash
-   uv run python -m analytics.duckdb_olap
-   ```
+| Nhóm Tài liệu | Tài liệu | Nội dung Chính |
+| :--- | :--- | :--- |
+| **Architecture** | [System Overview](docs/architecture/system-overview.md) | Kiến trúc chuẩn **arc42**, sơ đồ **C4 Context & Container**, End-to-End Sequence Diagram và ranh giới Ports & Adapters. |
+| **Architecture Decisions** | [ADR Directory](docs/architecture/adr/0000-template.md) | Hồ sơ quyết định kiến trúc (**MADR**): [ADR-0001 Lambda](docs/architecture/adr/0001-lambda-architecture-dual-pipeline.md), [ADR-0002 Adapters](docs/architecture/adr/0002-ports-and-adapters-singleton-pooling.md), [ADR-0003 Data Contract](docs/architecture/adr/0003-pydantic-v2-whitelist-data-contract.md), [ADR-0004 SDK Transport](docs/architecture/adr/0004-sdk-dual-flush-and-beacon-transport.md), [ADR-0005 Local Stack](docs/architecture/adr/0005-lightweight-local-stack-in-memory-parquet.md). |
+| **Data Engineering** | [Data Contracts & Schemas](docs/data/data-contracts-and-schemas.md) | Đặc tả trường dữ liệu `ClickstreamEvent`, quy tắc xác thực, bảng PostgreSQL, phân vùng Parquet trên MinIO và sơ đồ Data Lineage. |
+| **Analytics & BI** | [Analytics & Metrics](docs/data/analytics-and-metrics.md) | Logic cửa sổ thời gian 60s, cơ chế chống trùng lặp (Idempotency), truy vấn DuckDB OLAP và hệ thống chỉ số phễu chuyển đổi. |
+| **API Reference** | [Ingestion API](docs/api/ingestion-api.md) | Đặc tả `POST /track` (đơn lẻ & batch), `GET /health`, mã lỗi HTTP và ví dụ tích hợp. |
+| **Operations** | [Operations Runbook](docs/operations/runbook.md) | Bảng tham chiếu biến môi trường đầy đủ, quản lý vòng đời Docker Compose, chạy Simulator và ma trận xử lý sự cố (Troubleshooting Matrix). |
+| **Cloud Migration** | [GCP Readiness Baseline](docs/migration/gcp-readiness-baseline.md) | Đánh giá hiện trạng **As-Is**, các điểm nối Adapter sẵn có, điểm nghẽn coupling cần gỡ bỏ và kiến trúc mục tiêu **Planned GCP Serverless**. |
 
 ---
 
-### B. Luồng Real-time Speed Processing (Redpanda -> PostgreSQL)
+## Cấu trúc Thư mục (Repository Layout)
 
-1. **Khởi chạy Quix Streams Speed Processor:**
-   ```bash
-   uv run python -m streaming.processor
-   ```
-2. Processor sẽ tiêu thụ realtime các sự kiện và đếm số lượng thông qua Tumbling Window (60 giây), sau đó UPSERT kết quả tức thì vào bảng `realtime_metrics` trong **PostgreSQL** để chống trùng lặp dữ liệu (Idempotency).
-
----
-
-## 6. Migration Path (Lộ trình chuyển đổi lên Google Cloud Platform)
-
-Nhờ áp dụng **Adapter Pattern** và thiết kế **Cloud-Native**, việc chuyển dịch từ hạ tầng On-demand sang Google Cloud Platform hoàn toàn là **1-to-1 mapping** mà không phải tái cấu trúc Core Logic:
-
-| Thành phần kiến trúc | Môi trường Local (Self-hosted) | Dịch vụ tương đương trên Google Cloud Platform (GCP) | Chiến lược chuyển đổi (Migration Strategy) |
-| :--- | :--- | :--- | :--- |
-| **Ingestion API** | FastAPI (Docker Container) | **Cloud Run** | Deploy containerized FastAPI lên Cloud Run với Serverless Auto-scaling (0 -> N instances). |
-| **Message Broker** | Redpanda (Kafka-compatible) | **Google Cloud Pub/Sub** | Kích hoạt `PubSubPublisher` (kế thừa `MessagePublisher` ABC) để publish message trực tiếp lên Pub/Sub Topic. |
-| **Data Lake Storage** | MinIO (Parquet files) | **Google Cloud Storage (GCS)** | Kích hoạt `GCSStorageClient` (kế thừa `StorageClient` ABC). Đường dẫn `s3://` chuyển thành `gs://`. |
-| **Stream Processing** | Quix Streams (Python) | **Cloud Dataflow** (Apache Beam) hoặc **Cloud Run / GKE** | Chuyển logic stream sang Dataflow (Beam Python SDK) hoặc giữ nguyên Quix Streams container chạy trên Cloud Run/GKE. |
-| **Serving Database** | PostgreSQL (Docker) | **Cloud SQL for PostgreSQL** | Thay đổi connection string `POSTGRES_HOST` trỏ đến Cloud SQL Instance IP / Private Service Connect. |
-| **OLAP / Analytics Engine**| DuckDB (Querying MinIO) | **Google BigQuery** (hoặc BigQuery Omni / External Tables) | Tự động mount GCS Bucket vào BigQuery External Tables hoặc nạp Parquet vào BigQuery Native Storage. |
-| **Infrastructure Management**| Docker Compose | **Terraform (IaC) + Artifact Registry** | Khai báo hạ tầng GCP bằng Terraform modules, build & push image lên Artifact Registry. |
-
+```text
+StreamClick/
+├── api/                    # Stateless FastAPI Ingestion Service (/track, /health)
+├── batch/                  # Kafka-to-Parquet Micro-batch Consumer ghi vào MinIO
+├── streaming/              # Quix Streams 60s Tumbling Window Processor ghi vào PostgreSQL
+├── analytics/              # DuckDB OLAP connector & tập lệnh truy vấn SQL mẫu
+├── core/                   # Shared Settings (12-Factor), Pydantic Schemas & Port/Adapter ABCs
+├── sdk/tracking/           # Browser TypeScript Tracking SDK (Dual-Flush, sendBeacon, Session TTL)
+├── frontend/               # React 19 + Vite E-commerce Storefront (JerseyPlug)
+├── simulator/              # CLI Replay Generator phát sự kiện từ Kaggle CSV dataset
+├── infrastructure/         # SQL khởi tạo Docker và Extensible Module Test Harness
+├── tests/                  # Unit / Integration / E2E test suites
+└── docs/                   # Bộ tài liệu kiến trúc, dữ liệu, API, vận hành & Cloud Migration
+```

@@ -59,7 +59,7 @@ htmlcov/
 # Logs & Databases / Data Storage
 *.log
 logs/
-data/
+/data
 *.duckdb
 *.parquet
 
@@ -69,3 +69,23 @@ Thumbs.db
 
 # Quix Streams State Store
 state/
+
+# Terraform IaC (keep .terraform.lock.hcl & *.tfvars.example tracked)
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Cloud Credentials & Local Secrets (Zero-Trust Guardrail)
+*-key.json
+*service-account*.json
+credentials.json
+.secrets/

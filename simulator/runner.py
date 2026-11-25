@@ -115,7 +115,7 @@ class SimulationRunner:
                         
                         if self.delay_seconds > 0:
                             time.sleep(self.delay_seconds)
-                        if self.max_events and self.total_processed >= self.max_events:
+                        if self.max_events is not None and self.max_events > 0 and self.total_processed >= self.max_events:
                             return
 
                     except Exception as e:

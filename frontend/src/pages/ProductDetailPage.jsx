@@ -1,18 +1,21 @@
-import React, { useState, useRef, Suspense, lazy } from 'react';
-import { ArrowLeft } from 'lucide-react';
-import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { ArrowLeft } from 'lucide-react';
+import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
+// --- TRACKING SDK ---
+import { trackingService } from '../../../sdk/tracking';
+
 // --- COMPONENT IMPORTS ---
-import ProductGallery from '../components/product/ProductGallery';
-import ProductInfo from '../components/product/ProductInfo';
-import VariantSelector from '../components/product/VariantSelector';
+import { useProducts } from '@/context/ProductContext';
 import PersonalizationBuilder from '../components/product/PersonalizationBuilder';
 import ProductActions from '../components/product/ProductActions';
-import StickyMobileBar from '../components/product/StickyMobileBar';
+import ProductGallery from '../components/product/ProductGallery';
+import ProductInfo from '../components/product/ProductInfo';
 import RelatedProductsCarousel from '../components/product/RelatedProductsCarousel';
-import { useProducts } from '@/context/ProductContext';
+import StickyMobileBar from '../components/product/StickyMobileBar';
+import VariantSelector from '../components/product/VariantSelector';
 import { useTranslation } from '../hooks/useTranslation';
 
 export default function ProductDetailPage() {
@@ -59,7 +62,7 @@ export default function ProductDetailPage() {
 
   // --- 4. REFS & OBSERVERS ---
   const productActionsRef = useRef(null);
-  React.useEffect(() => {
+  useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => setShowStickyBar(!entry.isIntersecting),
       { threshold: 0, rootMargin: '-100px 0px 0px 0px' },
@@ -77,6 +80,23 @@ export default function ProductDetailPage() {
   const currentPatchFee = Number(selectedPatch?.price || 0);
   const singleProductPrice = basePrice + currentPrintFee + currentPatchFee;
   const totalCalculatedPrice = singleProductPrice * quantity;
+
+  // --- 5. TRACKING: PRODUCT VIEW ---
+  useEffect(() => {
+    if (getDetailProduct?.id) {
+      trackingService.trackEvent({
+        event_type: 'product_view',
+        product_id: String(getDetailProduct.id),
+        price: Number(basePrice.toFixed(2)),
+        amount: Number(basePrice.toFixed(2)),
+        properties: {
+          name: getDetailProduct.name,
+          category: getDetailProduct.category,
+          on_sale: Boolean(getDetailProduct.on_sale),
+        },
+      });
+    }
+  }, [getDetailProduct?.id, basePrice]);
 
   // --- 6. HANDLERS ---
   const handleAddToCart = () => {
@@ -163,6 +183,22 @@ export default function ProductDetailPage() {
             padding: '12px',
             borderRadius: '16px',
             width: '320px',
+          },
+        });
+
+        // Track 'add_to_cart' event
+        trackingService.trackEvent({
+          event_type: 'add_to_cart',
+          product_id: String(getDetailProduct?.id),
+          price: Number(singleProductPrice.toFixed(2)),
+          amount: Number(totalCalculatedPrice.toFixed(2)),
+          properties: {
+            name: getDetailProduct?.name,
+            size: selectedSize,
+            quantity: Number(quantity),
+            custom_name: customName.trim(),
+            custom_number: customNumber.trim(),
+            patch: selectedPatch?.label || selectedPatch?.name || 'None',
           },
         });
 

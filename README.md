@@ -228,8 +228,11 @@ Batch Layer chịu trách nhiệm gom các sự kiện Clickstream theo micro-ba
    # Tải Kaggle Dataset và bắn 100 sự kiện mẫu với delay 0.05s
    uv run python -m simulator.main -l 100 -d 0.05
    
-   # Hoặc chỉ định file CSV cụ thể
+   # Chỉ định file CSV cụ thể và giới hạn 500 dòng
    uv run python -m simulator.main -f "data/raw/ecommerce_clickstream_transactions.csv" -l 500 -d 0.01
+
+   # Đọc toàn bộ file CSV (bỏ tham số -l hoặc truyền -l 0)
+   uv run python -m simulator.main -f "data/raw/ecommerce_clickstream_transactions.csv" -d 0.01
    ```
 
 4. **Terminal 4 - Chạy truy vấn phân tích OLAP với DuckDB:**

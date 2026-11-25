@@ -9,6 +9,8 @@ import ProductsPage from "@/pages/ProductsPage";
 import CartPage from "@/pages/CartPage";
 import { Toaster } from "sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useEffect } from "react";
+import {trackingService} from "../../sdk/tracking/tracker"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,7 +20,16 @@ const queryClient = new QueryClient({
     },
   },
 });
-function App() {
+
+function App() {  
+
+  useEffect(() => {
+    trackingService.init();
+    return () => {
+      trackingService.cleanup();
+    };
+  }, [])
+
   return (
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>

@@ -22,7 +22,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("-u", "--url", type=str, default="http://localhost:8000/track", help="API URL")
     parser.add_argument("-c", "--chunk-size", type=int, default=1000, help="Batch read rows")
     parser.add_argument("-d", "--delay", type=float, default=0.01, help="Pacing (seconds)")
-    parser.add_argument("-l", "--limit", type=int, default=100, help="Max events restriction")
+    parser.add_argument("-l", "--limit", type=int, default=None, help="Max events restriction (omit or 0 for all)")
     parser.add_argument("-t", "--timeout", type=float, default=5.0, help="HTTP Timeout (s)")
     return parser.parse_args()
 
